@@ -39,7 +39,7 @@ public class Sorter {
                     @Override
                     public int[] call() throws Exception {
                         return sort(subArrays[index], divisionLevel-1);
-                    }                
+                    }
                 });
                 futures[i] = runnable;
             }
