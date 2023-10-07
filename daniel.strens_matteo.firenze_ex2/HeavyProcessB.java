@@ -3,13 +3,14 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
 
 public class HeavyProcessB {
     private static ServerSocket serverSocket;
     private static Socket socket;
     private static DataInputStream in;
     private static DataOutputStream out;
-    private static int token = 1;
+    private static int token = 0;
 
     public HeavyProcessB() {
         try {
@@ -47,10 +48,45 @@ public class HeavyProcessB {
             e.printStackTrace();
         }
     }
-
-    public static void main(String[] args) {
+    
+    public static void listenHeavyweight() {
+        try {
+            token = in.readInt();
+            System.out.println("Received: " + token);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    /**
+     * Signal to other heavy weight process that we're done using the resource
+     */
+    public static void sendTokenToHeavyweight() {
+        try {
+            out.writeInt(1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    public static void main(String[] args) throws InterruptedException {
         new HeavyProcessB(); //To initialize static values
         HeavyProcessB.startListening();
-        //Add while(true) here
+
+        //Enter the main loop
+        while(true){
+            while(token == 0)
+                listenHeavyweight();
+
+            // for (int i=0; i < NUM_LIGHTWEIGHTS; i++)
+            //     sendActionToLightweight(i);
+
+            // while(answersfromLightweigth < NUM_LIGHTWEIGHTS)
+            //     listenLightweight();
+
+            token = 0;
+            TimeUnit.SECONDS.sleep(2);
+            sendTokenToHeavyweight();
+        }
     }
 }
