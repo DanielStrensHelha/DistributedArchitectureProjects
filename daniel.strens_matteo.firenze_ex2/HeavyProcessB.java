@@ -14,6 +14,7 @@ public class HeavyProcessB {
 
     public HeavyProcessB() {
         try {
+            //Waiting for HeavyProcess A to connect
             serverSocket = new ServerSocket(5000);
         } catch (IOException e) {
             e.printStackTrace();
@@ -71,7 +72,9 @@ public class HeavyProcessB {
     
     public static void main(String[] args) throws InterruptedException {
         new HeavyProcessB(); //To initialize static values
+        System.out.println("----- HeavyProcess B -----");
         HeavyProcessB.startListening();
+
 
         //Enter the main loop
         while(true){

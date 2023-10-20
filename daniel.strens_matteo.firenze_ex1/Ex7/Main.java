@@ -27,6 +27,7 @@ public class Main {
 
         //Sorting the array
         System.out.println("Array created and shuffled.\nSorting the array...");
+        @SuppressWarnings("unused")
         int[] sortedArray = Sorter.sort(array);
 
         //Timer end time

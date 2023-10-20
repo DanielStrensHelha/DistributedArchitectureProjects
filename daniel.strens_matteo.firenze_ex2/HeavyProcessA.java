@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.TimeUnit;
 
 public class HeavyProcessA {
     private static Socket socket;
@@ -10,7 +11,9 @@ public class HeavyProcessA {
     private static Socket[] lightWeights;
 
     private static int answersfromLightweigth;
-    private final static String SUB_PROCESS = "LightWeightProcessA";
+    
+    private final static String SUB_PROCESS = ProcessHandle.current().info().command()
+        .orElse(null);
     private final static int LIGHT_WEIGHT_PORT = 5001;
     private final static int NUM_LIGHTWEIGHTS = 3;
 
@@ -37,6 +40,7 @@ public class HeavyProcessA {
             try {
                 // Create the process
                 ProcessBuilder pBuilder = new ProcessBuilder(SUB_PROCESS, Integer.toString(LIGHT_WEIGHT_PORT));
+                @SuppressWarnings("unused")
                 Process process = pBuilder.start();
                 
                 // Wait for it to connect and store it into the lightweights array
@@ -86,6 +90,14 @@ public class HeavyProcessA {
     }
     
     public static void main(String[] args) {
+        System.out.println("Ik ben process A :)");
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
         new HeavyProcessA();
 
         //Enter the main loop

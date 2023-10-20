@@ -26,6 +26,7 @@ public class Sorter {
     public static int[] sort(int[] array, int divisionLevel) throws InterruptedException, ExecutionException {
         if (divisionLevel > 0){
             //Create two Callable to start at the same time
+            @SuppressWarnings("unchecked")
             RunnableFuture<int[]>[] futures = new RunnableFuture[2];
 
             int[][] subArrays = new int[2][];
