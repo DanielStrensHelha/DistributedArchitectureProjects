@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.TimeUnit;
 
 public class HeavyProcessA {
     private static Socket socket;
@@ -12,8 +11,7 @@ public class HeavyProcessA {
 
     private static int answersfromLightweigth;
     
-    private final static String SUB_PROCESS = ProcessHandle.current().info().command()
-        .orElse(null);
+    private final static String SUB_PROCESS = "LightWeightProcessA";
     private final static int LIGHT_WEIGHT_PORT = 5001;
     private final static int NUM_LIGHTWEIGHTS = 3;
 
@@ -36,15 +34,28 @@ public class HeavyProcessA {
             e.printStackTrace();
         }
 
+        try {
+            createProcesses();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Create the subprocesses LightWeightProcessA
+     * @throws URISyntaxException
+     */
+    private void createProcesses() throws URISyntaxException {
         for (int i = 0; i < NUM_LIGHTWEIGHTS; i++) {
             try {
                 // Create the process
-                ProcessBuilder pBuilder = new ProcessBuilder(SUB_PROCESS, Integer.toString(LIGHT_WEIGHT_PORT));
+                ProcessBuilder pBuilder = new ProcessBuilder("java", SUB_PROCESS, Integer.toString(LIGHT_WEIGHT_PORT));
                 @SuppressWarnings("unused")
                 Process process = pBuilder.start();
-                
+
                 // Wait for it to connect and store it into the lightweights array
                 lightWeights[i] = server.accept();
+                System.out.println("Accepted a process :D");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -90,14 +101,7 @@ public class HeavyProcessA {
     }
     
     public static void main(String[] args) {
-        System.out.println("Ik ben process A :)");
-        try {
-            TimeUnit.SECONDS.sleep(3);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
+        System.out.println("----- HeavyProcess A -----");
         new HeavyProcessA();
 
         //Enter the main loop

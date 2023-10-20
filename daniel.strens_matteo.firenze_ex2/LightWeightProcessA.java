@@ -19,6 +19,6 @@ public class LightWeightProcessA {
 
     public static void main(String[] args) {
         int port = Integer.valueOf(args[0]);
-        LightWeightProcessA process = new LightWeightProcessA(port);        
+        LightWeightProcessA process = new LightWeightProcessA(port);   
     }
 }

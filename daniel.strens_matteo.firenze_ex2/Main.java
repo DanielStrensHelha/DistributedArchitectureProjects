@@ -64,7 +64,7 @@ public class Main {
     }
     public static void main(String[] args) {
         System.out.println("I am the main screen !\n\n");
-        Main server = new Main(5000);
+        Main server = new Main(6969);
         server.startListening();
     }
 }

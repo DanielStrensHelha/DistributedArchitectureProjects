@@ -71,10 +71,9 @@ public class HeavyProcessB {
     }
     
     public static void main(String[] args) throws InterruptedException {
-        new HeavyProcessB(); //To initialize static values
         System.out.println("----- HeavyProcess B -----");
+        new HeavyProcessB(); //To initialize static values
         HeavyProcessB.startListening();
-
 
         //Enter the main loop
         while(true){
