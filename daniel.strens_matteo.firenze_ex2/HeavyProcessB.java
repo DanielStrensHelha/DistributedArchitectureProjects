@@ -87,7 +87,7 @@ public class HeavyProcessB {
             //     listenLightweight();
 
             token = 0;
-            TimeUnit.SECONDS.sleep(20);
+            TimeUnit.SECONDS.sleep(2);
             sendTokenToHeavyweight();
         }
     }

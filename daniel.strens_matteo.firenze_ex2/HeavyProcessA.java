@@ -3,6 +3,7 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.Set;
 
 public class HeavyProcessA {
@@ -16,7 +17,7 @@ public class HeavyProcessA {
 
     private static int answersfromLightweigth;
     
-    private final static String SUB_PROCESS = "LightWeightProcessA";
+    private final static String SUB_PROCESS = "LightWeightProcess";
     private final static int LIGHT_WEIGHT_PORT = 5001;
     private final static int NUM_LIGHTWEIGHTS = 3;
 
@@ -56,7 +57,7 @@ public class HeavyProcessA {
                 // Create the process
                 ProcessBuilder pBuilder = new ProcessBuilder("java",  
                     SUB_PROCESS,
-                    Integer.toString(LIGHT_WEIGHT_PORT)).inheritIO();
+                    Integer.toString(LIGHT_WEIGHT_PORT), "A").inheritIO();
                 @SuppressWarnings("unused")
                 Process process = pBuilder.start();
 
@@ -164,7 +165,6 @@ public class HeavyProcessA {
         });
     }
     
-    // TODO implement this
     /**
      * Wait for all lightweight process to respond to sendActionToLightWeight()
      */
@@ -190,6 +190,7 @@ public class HeavyProcessA {
         System.out.println("----- HeavyProcess A -----");
         new HeavyProcessA();
         Boolean stop = false;
+        Scanner scan = new Scanner(System.in);
 
         //Enter the main loop
         while(true){
@@ -206,6 +207,22 @@ public class HeavyProcessA {
 
             System.out.println("They are done");
             sendTokenToHeavyweight();
+            
+            System.out.println("press q <enter> to quit, anything else to continue");
+            String s = scan.nextLine();
+            
+            if (s.equals("q"))
+                break;
         }
+
+        // Tell all subprocesses to die
+        lightWeightsOut.forEach((s, sOut) -> {
+            try {
+                sOut.writeChar('/');
+            } catch (IOException e) {}
+        });
+
+        scan.nextLine();
+        scan.close();
     }
 }
