@@ -24,7 +24,7 @@ public class Main {
     private void startListening() {
         try {
             while (true) {
-                socket = server.accept();                
+                socket = server.accept();
                 HandledClient hc = new HandledClient(socket);
                 Thread th = new Thread(hc);
                 th.start();
