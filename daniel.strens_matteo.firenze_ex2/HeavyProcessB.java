@@ -96,13 +96,9 @@ public class HeavyProcessB {
         }
     }
     
-    public static void listenHeavyweight() {
-        try {
-            token = in.readInt();
-            System.out.println("Received: " + token);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public static void listenHeavyweight() throws IOException {
+        token = in.readInt();
+        System.out.println("Received: " + token);
     }
     
     /**
@@ -124,7 +120,11 @@ public class HeavyProcessB {
         //Enter the main loop
         while(true){
             while(token == 0)
-                listenHeavyweight();
+                try {
+                    listenHeavyweight();
+                } catch (IOException e) {
+                    return;
+                }
 
             // for (int i=0; i < NUM_LIGHTWEIGHTS; i++)
             //     sendActionToLightweight(i);
@@ -133,7 +133,7 @@ public class HeavyProcessB {
             //     listenLightweight();
 
             token = 0;
-            TimeUnit.SECONDS.sleep(2);
+            TimeUnit.SECONDS.sleep(20);
             sendTokenToHeavyweight();
         }
     }
