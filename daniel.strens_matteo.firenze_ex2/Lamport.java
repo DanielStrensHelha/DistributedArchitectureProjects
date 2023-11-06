@@ -1,47 +1,88 @@
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Lamport implements IClockAlgorithm{
     private List<Thread> toClose;
-    private HashMap<Socket, Integer> brothers;
     private Boolean shouldClose;
     private int portNumber;
-    
-    Lamport(HashSet<Socket> brothers, int port) {
-        portNumber = port;
+
+    private HashMap<Socket, DataOutputStream> sOuts;
+    private HashMap<Integer, Integer> timestampVector;
+    private HashMap<Integer, Boolean> ackVector;
+    private HashMap<Socket, Integer> ports;
+
+    private LinkedHashMap<Integer, Integer> priorityQueue;
+    private boolean wantToEnterCS;
+    private DataOutputStream displayOut;
+
+    /**
+     * Constructor
+     * @param brothers the sockets of communication to the other light weights
+     * @param port This light weight's port number
+     */
+    Lamport(ArrayList<Socket> brothers, int port, List<Integer> brosPorts,DataOutputStream displayOut) {
         shouldClose = false;
         toClose = new ArrayList<Thread>();
-        this.brothers = new HashMap<Socket, Integer>();
+        portNumber = port;
+        ports = new HashMap<Socket, Integer>();
+        this.sOuts = new HashMap<Socket, DataOutputStream>();
+        
+        wantToEnterCS = false;
+        priorityQueue = new LinkedHashMap<Integer, Integer>();
+        timestampVector = new HashMap<Integer, Integer>();
+        ackVector = new HashMap<Integer, Boolean>();
 
-        for (Socket socket : brothers) {
-            this.brothers.put(socket, Integer.MAX_VALUE);
+        this.displayOut = displayOut;
+
+        for (int it = 0; it < brothers.size(); it++) {
+            Socket socket = brothers.get(it);
+            int broPort = (brosPorts.get(it) >= this.portNumber) ? brosPorts.get(it+1) : brosPorts.get(it);
+
+            this.ports.put(socket, broPort);
+            this.timestampVector.put(broPort, 0);
+            this.ackVector.put(broPort, false);
         }
+        this.timestampVector.put(this.portNumber, 0);
 
         startListening();
     }
 
     @Override
     public void startListening() {
-        brothers.forEach((socket, i) -> {
+        log("HEEEEEEEEEEEERE \n\n" + ports.toString());
+        this.ports.forEach((socket, i) -> { //TODO understand why there is a wrong port number here sometimes
             Thread thLight  = new Thread(() -> {
+                DataInputStream sIn = null;
+                try {
+                    socket.setSoTimeout(3000);
+                    sIn = new DataInputStream(socket.getInputStream());
+                    DataOutputStream sOut = new DataOutputStream(socket.getOutputStream());
+                    sOuts.put(socket, sOut);
+                    log(sOut.toString());
+                    log(sOuts.toString());
+                    log("saving bro output port " + i);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
                 while (true) {
                     try {
-                        socket.setSoTimeout(3000);
-                        DataInputStream sIn = new DataInputStream(socket.getInputStream());
-
-                        synchronized(shouldClose) {
-                            if (shouldClose) {
-                                return;
-                            }
-                            listenLight(sIn);
+                        if (shouldClose) {
+                            return;
                         }
-
-                    } catch (Exception e) {log("Exception : " + e.getMessage());}
+                        listenLight(sIn, sOuts.get(socket), socket);
+                    } 
+                    catch (SocketTimeoutException e) {log("Exception : " + e.getMessage());}
+                    catch (Exception e) {e.printStackTrace(); return;}
                 }
             });
 
@@ -64,27 +105,113 @@ public class Lamport implements IClockAlgorithm{
     }
 
     /**
-     * TODO implement this
+     * implement this
      * @param sIn
      * @throws IOException
      */
-    private void listenLight(DataInputStream sIn) throws IOException {
+    private void listenLight(DataInputStream sIn, DataOutputStream sOut, Socket s) throws IOException {
         Character c = sIn.readChar();
+        log("Received from LW " + ports.get(s) + ": " + c);
         switch (c) {
-            case 'Q': //TODO Question : Can I use the CS ?
+            case 'R': // Request ?
+                // Wait for the timestamp
+                int timestamp = sIn.readInt();
                 
+                // Send acknowledgment
+                synchronized (sOut) {
+                    log("Sending back ACK");
+                    sOut.writeChar('A');
+                }
+                
+                enqueue(ports.get(s), timestamp);
                 break;
 
-            case 'Y': //TODO Yes, you can use the CS !
-            
+            case 'A': // Acknowledgement!
+                if  (!this.wantToEnterCS)
+                    break;
+                // Set acknowledgment as received
+                ackVector.put(ports.get(s), true);
+                log("Ack Vector at this point : " + ackVector.toString());
                 break;
-        
-            case 'D': //TODO Done using the CS.
-
+            case 'D': // Done using the CS.
+                if (priorityQueue.containsKey(ports.get(s)))
+                    priorityQueue.remove(ports.get(s));
                 break;
 
             default:
                 break;
+        }
+    }
+    
+    @Override
+    public void writeToResource() throws InterruptedException {
+        this.wantToEnterCS = true;
+        // Enqueue request
+        enqueue(this.portNumber, timestampVector.get(this.portNumber));
+        log("enquing self");
+
+        // Send request to everyone
+        log("Gonna send to : " + sOuts.toString());
+        sOuts.forEach((s, sOut) -> {
+            log("sending 'R' to " + ports.get(s));
+            try {sOut.writeChar('R'); sOut.writeInt(0);} 
+            catch (IOException e) {e.printStackTrace();}
+        });
+
+        // Wait for ack's
+        log("PQ : " + priorityQueue.toString());
+        while (ackVector.containsValue(false)) {
+            Thread.sleep(500);
+            log("Now checking ack... " + ackVector.toString());
+        }
+
+        // Wait to be at the top of the queue
+        while (priorityQueue.keySet().iterator().next() != this.portNumber)
+            Thread.sleep(500);
+
+        // Enter the CS and write to display
+        for(int i = 0; i<10; i++) {
+            writeToDisplay("I'm (Lamport, port : " + this.portNumber + ") writing to the console, messange : " + i);
+            Thread.sleep(1000);
+        }
+        this.wantToEnterCS = false;
+        sOuts.forEach((s, sOut) -> {
+            try {
+                sOut.writeChar('D');
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Write to the display entity
+     * @param s
+     */
+    private void writeToDisplay(String s) {
+        try {
+            displayOut.writeChars(s + "\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Enqueue the request
+     * @param port the ID of the requesting process
+     * @param timestamp the timestamp with which to order the queue
+     */
+    private void enqueue(Integer port, int timestamp) {
+        // Add to the PQ and resort it
+        synchronized (priorityQueue) {
+            priorityQueue.put(port, timestamp);
+            priorityQueue = priorityQueue.entrySet().stream()
+                .sorted((Map.Entry.<Integer, Integer>comparingByValue()
+                .thenComparing(Map.Entry.comparingByKey())))
+                .collect(Collectors.toMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)
+                );
+            log("PQ at this point : " + priorityQueue.toString());
         }
     }
 
@@ -95,5 +222,6 @@ public class Lamport implements IClockAlgorithm{
     private void log(String s) {
         System.out.println("[Port:" + this.portNumber + "] > " + s);
     }
+
 
 }

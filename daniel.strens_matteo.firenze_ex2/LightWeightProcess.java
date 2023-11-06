@@ -5,7 +5,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -14,7 +13,7 @@ public class LightWeightProcess {
     private static final int BROTHER_CONNECTION_STARTING_PORT = 4000;
     private int port;
     private ServerSocket server;
-    private HashSet<Socket> brothers;
+    private ArrayList<Socket> brothers;
     IClockAlgorithm comAlgorithm;
 
     // For the communication with the heavy process : 
@@ -30,7 +29,7 @@ public class LightWeightProcess {
 
     public LightWeightProcess(int port, Character algorithmUsed) {
         this.port = BROTHER_CONNECTION_STARTING_PORT;
-        brothers = new HashSet<Socket>();
+        brothers = new ArrayList<Socket>();
         this.algorithmUsed = algorithmUsed;
 
         // Connect to the heavy process
@@ -73,8 +72,9 @@ public class LightWeightProcess {
                 connectToBrothers(algorithmUsed);
                 break;
 
-            case 'W':   //TODO You can write to the console
-                writeToDisplay("(LightWeightProcessA" + this.port + ") Unimplemented at the moment");
+            case 'W':   // You can write to the console
+                log("SENDING THE INFO THAT THEY SHOULD WRITE TO THE RESOURCE");
+                this.comAlgorithm.writeToResource();
                 break;
 
             case 'D':   // Tell me when you're done writing
@@ -108,36 +108,34 @@ public class LightWeightProcess {
             ports.add(port);
         }
         Collections.sort(ports);
-        Iterator<Integer> it = ports.iterator();
-
+        log("Received those ports : " + ports.toString());
+        
+        Iterator<Integer> it = ports.iterator();        
         // Connect to all precedent ports
         while (it.hasNext()) {
             int port = it.next();
-            if (port >= this.port)
-                break;
+            if (port < this.port) {
+                try {brothers.add(new Socket("localhost", port));}
+                catch (Exception e) {log(e.getMessage());}
+            }
             
-            try {brothers.add(new Socket("localhost", port));}
-            catch (Exception e) {log(e.getMessage());}
+            if (port > this.port) {
+                server.setSoTimeout(3000);
+                brothers.add(server.accept());
+                log("Accepted connection from " + port);
+            }
         }
 
-        // Wait for the next ports to connect
-        while (it.hasNext()) {
-            int port = it.next();
-            server.setSoTimeout(3000);
-            brothers.add(server.accept());
-            log("Accepted connection from " + port);
-        }
-
-        startListeningToLight(algorithm);
+        startListeningToLight(algorithm, ports);
     }
 
     /**
      * Creates a thread for each brother, 
      * which will listen to said brother and take necessary action
      */
-    private void startListeningToLight(Character algorithm) {
+    private void startListeningToLight(Character algorithm, List<Integer> ports) {
         if (algorithm.equals('A'))
-            comAlgorithm = new Lamport(brothers, this.port);
+            comAlgorithm = new Lamport(brothers, this.port, ports, displayOut);
         else if (algorithm.equals('B'))
             comAlgorithm = new Agrawala(brothers);
         else log("Don't know the algorithm :(");
@@ -148,19 +146,7 @@ public class LightWeightProcess {
      * @param s
      */
     private void log(String s) {
-        System.out.println("[Port:" + this.port + "] > " + s);
-    }
-
-    /**
-     * Write to the display entity
-     * @param s
-     */
-    private void writeToDisplay(String s) {
-        try {
-            displayOut.writeChars(s + "\n");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        System.out.println("[port "+ port + "] " + s);
     }
 
     private void closeAll() {

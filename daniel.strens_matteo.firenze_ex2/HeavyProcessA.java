@@ -1,8 +1,11 @@
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -73,7 +76,7 @@ public class HeavyProcessA {
         }
 
         // Connect processes
-        final Set<Integer> ports = getPorts();
+        final List<Integer> ports = getPorts();
         System.out.println(ports.toString());
 
         // Tell them who to connect to
@@ -95,7 +98,7 @@ public class HeavyProcessA {
      * Ask each light weight their port number
      * @throws IOException
      */
-    private Set<Integer> getPorts() throws IOException {
+    private List<Integer> getPorts() throws IOException {
         Set<Integer> ports = new HashSet<Integer>();
         Iterator<Socket> it = lightWeightsOut.keySet().iterator();
 
@@ -120,8 +123,9 @@ public class HeavyProcessA {
             } catch (Exception e) {it.remove(); continue;}
             s.setSoTimeout(0);
         }
-
-        return ports;
+        final List<Integer> sortedPorts = new ArrayList<>(ports);
+        Collections.sort(sortedPorts);
+        return sortedPorts;
     }
 
 
@@ -189,7 +193,6 @@ public class HeavyProcessA {
     public static void main(String[] args) throws IOException {
         System.out.println("----- HeavyProcess A -----");
         new HeavyProcessA();
-        Boolean stop = false;
         Scanner scan = new Scanner(System.in);
 
         //Enter the main loop
@@ -202,6 +205,12 @@ public class HeavyProcessA {
             
             while (answersfromLightweigth < NUM_LIGHTWEIGHTS) {
                 listenLightweight();
+                try {
+                    Thread.sleep(9000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 System.out.println("Asking if the subprocesses are done...");
             }
 

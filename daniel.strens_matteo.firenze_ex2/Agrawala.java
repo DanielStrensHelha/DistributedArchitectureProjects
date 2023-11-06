@@ -1,8 +1,8 @@
 import java.net.Socket;
-import java.util.HashSet;
+import java.util.ArrayList;
 
 public class Agrawala implements IClockAlgorithm{
-    Agrawala(HashSet<Socket> brothers) {
+    Agrawala(ArrayList<Socket> brothers) {
         
     }
 
@@ -16,5 +16,11 @@ public class Agrawala implements IClockAlgorithm{
     public void startListening() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'startListening'");
+    }
+
+    @Override
+    public void writeToResource() throws InterruptedException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'writeToResource'");
     }
 }
