@@ -1,0 +1,1 @@
+To run the different programs you only need to go to the main files and run them
