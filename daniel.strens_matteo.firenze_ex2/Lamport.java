@@ -58,16 +58,17 @@ public class Lamport implements IClockAlgorithm{
 
     @Override
     public void startListening() {
-        log("HEEEEEEEEEEEERE \n\n" + ports.toString());
         this.ports.forEach((socket, i) -> { //TODO understand why there is a wrong port number here sometimes
+            log("HEEEEEEEEEEEERE \n\n" + ports.toString());
             Thread thLight  = new Thread(() -> {
                 DataInputStream sIn = null;
+                DataOutputStream sOut = null;
                 try {
                     socket.setSoTimeout(3000);
                     sIn = new DataInputStream(socket.getInputStream());
-                    DataOutputStream sOut = new DataOutputStream(socket.getOutputStream());
+                    sOut = new DataOutputStream(socket.getOutputStream());
                     sOuts.put(socket, sOut);
-                    log(sOut.toString());
+                    log("Saved : " + sOut.toString());
                     log(sOuts.toString());
                     log("saving bro output port " + i);
                 } catch (Exception e) {
@@ -79,7 +80,7 @@ public class Lamport implements IClockAlgorithm{
                         if (shouldClose) {
                             return;
                         }
-                        listenLight(sIn, sOuts.get(socket), socket);
+                        listenLight(sIn, sOut, socket);
                     } 
                     catch (SocketTimeoutException e) {log("Exception : " + e.getMessage());}
                     catch (Exception e) {e.printStackTrace(); return;}
@@ -148,10 +149,9 @@ public class Lamport implements IClockAlgorithm{
         this.wantToEnterCS = true;
         // Enqueue request
         enqueue(this.portNumber, timestampVector.get(this.portNumber));
-        log("enquing self");
 
         // Send request to everyone
-        log("Gonna send to : " + sOuts.toString());
+        log("Sending request to : " + sOuts.toString());
         sOuts.forEach((s, sOut) -> {
             log("sending 'R' to " + ports.get(s));
             try {sOut.writeChar('R'); sOut.writeInt(0);} 
@@ -222,6 +222,4 @@ public class Lamport implements IClockAlgorithm{
     private void log(String s) {
         System.out.println("[Port:" + this.portNumber + "] > " + s);
     }
-
-
 }

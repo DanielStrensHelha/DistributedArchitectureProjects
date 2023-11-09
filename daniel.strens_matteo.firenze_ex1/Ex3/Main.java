@@ -11,12 +11,12 @@ public class Main {
         * We then start*/
 
         LinkedList<Integer> list = new LinkedList<>();
-        for(int i = 1 ; i <= 100000 ; i++)
+        for(int i = 1 ; i <= 100_000 ; i++)
             list.add(i);
         
-        Collections.shuffle(list);
+        // Collections.shuffle(list);
 
-        ThreadHandler th = new ThreadHandler(list,1);
+        ThreadHandler th = new ThreadHandler(list,99_999);
         th.searchNumber();
 
 
