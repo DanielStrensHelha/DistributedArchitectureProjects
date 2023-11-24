@@ -181,8 +181,10 @@ public class HeavyProcessA {
                 sOut.writeChar('D');
 
                 Character c = sIn.readChar();
-                if (c.equals('Y'))
+                if (c.equals('Y')) {
+                    System.out.println("Received " + c);
                     answersfromLightweigth++;
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -201,18 +203,19 @@ public class HeavyProcessA {
                 listenHeavyweight();
 
             sendActionToLightweight();
-            answersfromLightweigth = 0;
             
-            while (answersfromLightweigth < NUM_LIGHTWEIGHTS) {
-                listenLightweight();
+            do {
                 try {
-                    Thread.sleep(9000);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {}
+
+                System.out.println("Before : " + answersfromLightweigth);
+                listenLightweight();
+                System.out.println("After : " + answersfromLightweigth);
+                
                 System.out.println("Asking if the subprocesses are done...");
-            }
+                System.out.println("Answers : " + answersfromLightweigth);
+            } while (answersfromLightweigth < NUM_LIGHTWEIGHTS);
 
             System.out.println("They are done");
             sendTokenToHeavyweight();

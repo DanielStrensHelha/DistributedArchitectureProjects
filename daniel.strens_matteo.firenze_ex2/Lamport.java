@@ -58,8 +58,8 @@ public class Lamport implements IClockAlgorithm{
 
     @Override
     public void startListening() {
-        this.ports.forEach((socket, i) -> { //TODO understand why there is a wrong port number here sometimes
-            log("HEEEEEEEEEEEERE \n\n" + ports.toString());
+        this.ports.forEach((socket, i) -> {
+            log("ports to write to \n\n" + ports.toString());
             Thread thLight  = new Thread(() -> {
                 DataInputStream sIn = null;
                 DataOutputStream sOut = null;

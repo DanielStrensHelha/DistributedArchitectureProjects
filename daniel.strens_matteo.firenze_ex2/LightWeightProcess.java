@@ -21,6 +21,7 @@ public class LightWeightProcess {
     private DataOutputStream heavyOut;
     private DataInputStream heavyIn;
     private Character algorithmUsed;
+    private Thread criticalThread;
     
     // For the communication with the displaying process
     private static final int DISPLAY_PORT = 6969;
@@ -74,11 +75,33 @@ public class LightWeightProcess {
 
             case 'W':   // You can write to the console
                 log("SENDING THE INFO THAT THEY SHOULD WRITE TO THE RESOURCE");
-                this.comAlgorithm.writeToResource();
+                if (this.criticalThread != null && !this.criticalThread.isAlive()) {
+                    log("Can't tell them to start cause they didn't stop the last one");
+                    break;
+                }
+
+                this.criticalThread = new Thread(() -> {
+                    try {
+                        this.comAlgorithm.writeToResource();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+                this.criticalThread.start();
+                
                 break;
 
             case 'D':   // Tell me when you're done writing
-                heavyOut.writeChar('Y'); //TODO For now, say yes
+                if (this.criticalThread != null && this.criticalThread.isAlive()) {
+                    log("not finished");
+                    heavyOut.writeChar('N');
+                }
+                
+                else {
+                    log("Finished !");
+                    heavyOut.writeChar('Y');
+                }
+                
                 break;
 
             case '/': // Die        
@@ -88,7 +111,7 @@ public class LightWeightProcess {
             default:
                 break;
         }
-        log("returning false");
+        log("Not dying");
         return false;
     }
 
