@@ -1,63 +1,89 @@
 package Ex7;
 
+import java.security.InvalidParameterException;
 import java.util.Arrays;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.stream.IntStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Sorter {
+    static ExecutorService executor = Executors.newFixedThreadPool(1000);
+
     /**
-     * Sorts the array using mergesort
+     * Sorts the array using a threaded merge sort 
      * @param array the array to sort
-     * @return
+     * @return a sorted copy of the given array
      */
-    public static int[] sort(int[] array) throws InterruptedException, ExecutionException {
-        return sort(array, 2);
+    public static int[] sort(int[] array) {
+        int[] newArray = Arrays.copyOf(array, array.length);
+        
+        sort(newArray, 0, array.length);
+        return newArray;
     }
 
     /**
-     * Sorts the array using mergesort
+     * Sorts the specified subregion of the given array using threaded merge sort
      * @param array the array to sort
-     * @param divisionLevel the number of time the thread divides itself into other threads
-     * @return
+     * @param offset beginning cell of the subregion
+     * @param size size of the subregion
      */
-    public static int[] sort(int[] array, int divisionLevel) throws InterruptedException, ExecutionException {
-        if (divisionLevel > 0){
-            //Create two Callable to start at the same time
-            @SuppressWarnings("unchecked")
-            RunnableFuture<int[]>[] futures = new RunnableFuture[2];
+    public static void sort(int[] array, int offset, int size) {
+        //Preconditions
+        if (array.length <= 1) return;
+        if (offset < 0 || size < 1) throw new InvalidParameterException("Offset must be >= 0 and size >= 1");
+        if (offset + size > array.length) throw new InvalidParameterException("Got a size + offset bigger than the array size");
 
-            int[][] subArrays = new int[2][];
-            subArrays[0] = Arrays.copyOfRange(array, 0, array.length/2);
-            subArrays[1] = Arrays.copyOfRange(array, array.length/2, array.length);
-            
-            for (int i = 0; i < 2; i++) {
-                final int index=i;
+        /*
+        * Divide the array if we need to, and send the two halves to new threads.
+        */
+        if (size > 2) {
+            final int off1 = offset;
+            final int off2 = offset + (size/2);
 
-                RunnableFuture<int[]> runnable = new FutureTask<>(new Callable<int[]>() {
-                    @Override
-                    public int[] call() throws Exception {
-                        return sort(subArrays[index], divisionLevel-1);
-                    }
-                });
-                futures[i] = runnable;
-            }
+            final int size1 = size / 2;
+            final int size2 = size - size1;
 
-            Thread th = new Thread(futures[0]);
-            th.start();
-            Thread th2 = new Thread(futures[1]);
+            Thread th1 = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    sort(array, off1, size1);
+                }
+            });
+            Thread th2 = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    sort(array, off2, size2);
+                }
+            });
+
+            th1.start();
             th2.start();
             
-            //Reassemble the array
-            int[] part1 = (int[]) futures[0].get();
-            int[] part2 = (int[]) futures[1].get();
-            return mergeArrays(part1, part2); 
+            /*
+            * Wait for the arrays to be sorted and merge them.
+            */
+            try {
+                th1.join();
+                th2.join();
+
+                mergeArrays(array, off1, size1, off2, size2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-        else
-            return bottomUpMergeSort(array);
+
+        /*
+        * If we don't need more threads, sort the array and send it back.
+        */
+        else {
+            if (array[offset] > array[offset+1]) {
+                //swap them
+                array[offset] = array[offset] ^ array[offset + 1];
+                array[offset + 1] = array[offset] ^ array[offset + 1];
+                array[offset] = array[offset] ^ array[offset + 1];
+            }
+        }
     }
+
 
     /**
      * Merges arrays with the merge method
@@ -65,37 +91,24 @@ public class Sorter {
      * @param array2
      * @return An array containing the two inputs merged
      */
-    private static int[] mergeArrays(int[] array1, int[] array2) {
-        int[] mergedArray = null;
-        int middle = 0;
+    private static void mergeArrays(int[] array, int off1, int size1, int off2, int size2) {
+        int low = off1;
+        int middle = size1+off1 - 1;
+        int high = size2 + off2 - 1;
 
-        if (array1.length >= array2.length) {
-            mergedArray = IntStream.concat(Arrays.stream(array1), Arrays.stream(array2)).toArray();
-            middle = array1.length-1;
-        }
-        else {
-            mergedArray = IntStream.concat(Arrays.stream(array2), Arrays.stream(array1)).toArray();
-            middle = array2.length-1;
-        }
-
-        // Create working array
-        int[] aux = new int[mergedArray.length];
+        int[] aux = new int[array.length];
 
         // Merge the two arrays
-        merge(  mergedArray, aux, 0, 
-                middle, 
-                mergedArray.length-1);
-        
-        return mergedArray;
+        merge(array, aux, low, middle, high);
     }
 
     /**
      * Sorts an array of integers using Bottom-Up Merge Sort.
      *
-     * @param arr The array of integers to be sorted.
+     * @param arr The array of integers to sort.
      * @return The sorted array.
      */
-    private static int[] bottomUpMergeSort(int[] arr) {
+    public static int[] bottomUpMergeSort(int[] arr) {
         int[] aux = new int[arr.length];
         int n = arr.length;
 

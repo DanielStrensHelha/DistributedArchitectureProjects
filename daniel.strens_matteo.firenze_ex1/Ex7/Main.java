@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
-    private final static int SIZE = 10_000;
+    private final static int SIZE = 500;
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {        
         //Shuffling the array
@@ -29,12 +29,19 @@ public class Main {
         System.out.println("Array created and shuffled.\nSorting the array...");
         @SuppressWarnings("unused")
         int[] sortedArray = Sorter.sort(array);
+        
+        //*
+        System.out.print("Sorted array : [");
+        for (int i = 0; i < sortedArray.length; i++) {
+            System.out.print(" " + sortedArray[i]);
+        }
+        System.out.println(" ]");
+        ////////////////*/
 
-        //Timer end time
+        //End timer and display result
         long endTime = System.nanoTime();
-
-        //Display the duration
         double duration = (double)(endTime - startTime) / 1_000_000;
+        
         System.out.println("Execution time with different threads in Miliseconds: " + duration);
         System.out.println("Array sorted !");
 
@@ -42,23 +49,30 @@ public class Main {
          * SECOND PART
          * sequential use of merge sort
          */
-         //Shuffle array
-        // array = list.stream().mapToInt(Integer::intValue).toArray();
+        //Shuffle array
+        array = list.stream().mapToInt(Integer::intValue).toArray();
         
         //Setting up a timer
         startTime = System.nanoTime();
 
         //Sorting the array
         System.out.println("Array created and shuffled.\nSorting the array...");
-        sortedArray = Sorter.sort(array, 0); // <--by setting the divisionLevel to 0, 1 thread will be used
+        sortedArray = Sorter.bottomUpMergeSort(array);
 
-        //Timer end time
+        //End timer and display results
         endTime = System.nanoTime();
-
-        //Display the duration
         duration = (double)(endTime - startTime) / 1_000_000;
+        
         System.out.println("Execution time without threads in Miliseconds: " + duration);
         System.out.println("Array sorted !");
+
+        //*
+        System.out.print("Sorted array : [");
+        for (int i = 0; i < sortedArray.length; i++) {
+            System.out.print(" " + sortedArray[i]);
+        }
+        System.out.println(" ]");
+        ////////////////*/
 
     }
 }
