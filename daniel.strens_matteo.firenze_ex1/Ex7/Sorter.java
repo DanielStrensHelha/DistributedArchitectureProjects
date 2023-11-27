@@ -4,9 +4,13 @@ import java.security.InvalidParameterException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
 
 public class Sorter {
     static ExecutorService executor = Executors.newFixedThreadPool(1000);
+    private static final ForkJoinPool pool = new ForkJoinPool();
+    private static int[] aux;
 
     /**
      * Sorts the array using a threaded merge sort 
@@ -15,6 +19,7 @@ public class Sorter {
      */
     public static int[] sort(int[] array) {
         int[] newArray = Arrays.copyOf(array, array.length);
+        aux = new int[array.length];
         
         sort(newArray, 0, array.length);
         return newArray;
@@ -27,59 +32,44 @@ public class Sorter {
      * @param size size of the subregion
      */
     public static void sort(int[] array, int offset, int size) {
-        //Preconditions
+        // Preconditions
         if (array.length <= 1) return;
         if (offset < 0 || size < 1) throw new InvalidParameterException("Offset must be >= 0 and size >= 1");
         if (offset + size > array.length) throw new InvalidParameterException("Got a size + offset bigger than the array size");
 
-        /*
-        * Divide the array if we need to, and send the two halves to new threads.
-        */
-        if (size > 2) {
-            final int off1 = offset;
-            final int off2 = offset + (size/2);
+        pool.invoke(new SortTask(array, offset, size));
+    }
 
-            final int size1 = size / 2;
-            final int size2 = size - size1;
+    private static class SortTask extends RecursiveAction {
+        private final int[] array;
+        private final int offset;
+        private final int size;
 
-            Thread th1 = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    sort(array, off1, size1);
-                }
-            });
-            Thread th2 = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    sort(array, off2, size2);
-                }
-            });
-
-            th1.start();
-            th2.start();
-            
-            /*
-            * Wait for the arrays to be sorted and merge them.
-            */
-            try {
-                th1.join();
-                th2.join();
-
-                mergeArrays(array, off1, size1, off2, size2);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        SortTask(int[] array, int offset, int size) {
+            this.array = array;
+            this.offset = offset;
+            this.size = size;
         }
 
-        /*
-        * If we don't need more threads, sort the array and send it back.
-        */
-        else {
-            if (array[offset] > array[offset+1]) {
-                //swap them
-                array[offset] = array[offset] ^ array[offset + 1];
-                array[offset + 1] = array[offset] ^ array[offset + 1];
-                array[offset] = array[offset] ^ array[offset + 1];
+        @Override
+        protected void compute() {
+            if (size > 2) {
+                int off1 = offset;
+                int off2 = offset + (size / 2);
+
+                int size1 = size / 2;
+                int size2 = size - size1;
+
+                invokeAll(new SortTask(array, off1, size1), new SortTask(array, off2, size2));
+
+                mergeArrays(array, off1, size1, off2, size2);
+            } else {
+                if (array[offset] > array[offset + 1]) {
+                    // swap them
+                    array[offset] = array[offset] ^ array[offset + 1];
+                    array[offset + 1] = array[offset] ^ array[offset + 1];
+                    array[offset] = array[offset] ^ array[offset + 1];
+                }
             }
         }
     }
@@ -95,9 +85,10 @@ public class Sorter {
         int low = off1;
         int middle = size1+off1 - 1;
         int high = size2 + off2 - 1;
-
-        int[] aux = new int[array.length];
-
+    
+        // Copy the elements to be merged into the auxiliary array
+        System.arraycopy(array, low, aux, low, high - low + 1);
+    
         // Merge the two arrays
         merge(array, aux, low, middle, high);
     }

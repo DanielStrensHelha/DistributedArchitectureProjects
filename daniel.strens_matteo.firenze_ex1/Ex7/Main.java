@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
-    private final static int SIZE = 500;
+    private final static int SIZE = 5_000_000;
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {        
         //Shuffling the array
@@ -30,7 +30,7 @@ public class Main {
         @SuppressWarnings("unused")
         int[] sortedArray = Sorter.sort(array);
         
-        //*
+        /*
         System.out.print("Sorted array : [");
         for (int i = 0; i < sortedArray.length; i++) {
             System.out.print(" " + sortedArray[i]);
@@ -66,7 +66,7 @@ public class Main {
         System.out.println("Execution time without threads in Miliseconds: " + duration);
         System.out.println("Array sorted !");
 
-        //*
+        /*
         System.out.print("Sorted array : [");
         for (int i = 0; i < sortedArray.length; i++) {
             System.out.print(" " + sortedArray[i]);
