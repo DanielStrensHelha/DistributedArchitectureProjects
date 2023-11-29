@@ -68,9 +68,6 @@ public class Lamport implements IClockAlgorithm{
                     sIn = new DataInputStream(socket.getInputStream());
                     sOut = new DataOutputStream(socket.getOutputStream());
                     sOuts.put(socket, sOut);
-                    log("Saved : " + sOut.toString());
-                    log(sOuts.toString());
-                    log("saving bro output port " + i);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -113,21 +110,30 @@ public class Lamport implements IClockAlgorithm{
     private void listenLight(DataInputStream sIn, DataOutputStream sOut, Socket s) throws IOException {
         Character c = sIn.readChar();
         log("Received from LW " + ports.get(s) + ": " + c);
+        
+        int timestamp = 0;
+        
         switch (c) {
             case 'R': // Request ?
                 // Wait for the timestamp
-                int timestamp = sIn.readInt();
+                timestamp = sIn.readInt();
+                manageTimestamp(timestamp, s);
                 
                 // Send acknowledgment
                 synchronized (sOut) {
                     log("Sending back ACK");
                     sOut.writeChar('A');
+                    sOut.writeInt(timestampVector.get(this.portNumber));
                 }
                 
                 enqueue(ports.get(s), timestamp);
                 break;
 
             case 'A': // Acknowledgement!
+                // Wait for the timestamp
+                timestamp = sIn.readInt();
+                manageTimestamp(timestamp, s);
+
                 if  (!this.wantToEnterCS)
                     break;
                 // Set acknowledgment as received
@@ -135,6 +141,10 @@ public class Lamport implements IClockAlgorithm{
                 log("Ack Vector at this point : " + ackVector.toString());
                 break;
             case 'D': // Done using the CS.
+                // Wait for the timestamp
+                timestamp = sIn.readInt();
+                manageTimestamp(timestamp, s);
+
                 if (priorityQueue.containsKey(ports.get(s)))
                     priorityQueue.remove(ports.get(s));
                 break;
@@ -144,26 +154,35 @@ public class Lamport implements IClockAlgorithm{
         }
     }
     
+    /**
+     * Updates the timestamp vector and prints it
+     * @param timestamp
+     * @param s
+     */
+    private void manageTimestamp(int timestamp, Socket s) {
+        timestampVector.put(ports.get(s), timestamp);
+        timestampVector.put(this.portNumber, 1 + Integer.max(timestamp, timestampVector.get(this.portNumber)));
+        System.out.println("Timestamp update : " + timestamp + " for " + ports.get(s) + "\n" + timestampVector);
+    }
+
     @Override
     public void writeToResource() throws InterruptedException {
         this.wantToEnterCS = true;
+        click();
+
         // Enqueue request
         enqueue(this.portNumber, timestampVector.get(this.portNumber));
 
         // Send request to everyone
         log("Sending request to : " + sOuts.toString());
         sOuts.forEach((s, sOut) -> {
-            log("sending 'R' to " + ports.get(s));
-            try {sOut.writeChar('R'); sOut.writeInt(0);} 
+            try {sOut.writeChar('R'); sOut.writeInt(timestampVector.get(this.portNumber));} 
             catch (IOException e) {e.printStackTrace();}
         });
 
         // Wait for ack's
-        log("PQ : " + priorityQueue.toString());
-        while (ackVector.containsValue(false)) {
+        while (ackVector.containsValue(false))
             Thread.sleep(500);
-            log("Now checking ack... " + ackVector.toString());
-        }
 
         // Wait to be at the top of the queue
         while (priorityQueue.keySet().iterator().next() != this.portNumber)
@@ -178,6 +197,7 @@ public class Lamport implements IClockAlgorithm{
         sOuts.forEach((s, sOut) -> {
             try {
                 sOut.writeChar('D');
+                sOut.writeInt(timestampVector.get(this.portNumber));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -211,8 +231,11 @@ public class Lamport implements IClockAlgorithm{
                 .collect(Collectors.toMap(
                     Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new)
                 );
-            log("PQ at this point : " + priorityQueue.toString());
         }
+    }
+
+    private void click() {
+        timestampVector.put(this.portNumber, 1 + timestampVector.get(this.portNumber));
     }
 
     /**

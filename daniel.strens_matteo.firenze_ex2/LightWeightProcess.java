@@ -74,7 +74,7 @@ public class LightWeightProcess {
                 break;
 
             case 'W':   // You can write to the console
-                log("SENDING THE INFO THAT THEY SHOULD WRITE TO THE RESOURCE");
+                log("Telling the algorithm to write to the resource");
                 if (this.criticalThread != null && !this.criticalThread.isAlive()) {
                     log("Can't tell them to start cause they didn't stop the last one");
                     break;
@@ -92,15 +92,11 @@ public class LightWeightProcess {
                 break;
 
             case 'D':   // Tell me when you're done writing
-                if (this.criticalThread != null && this.criticalThread.isAlive()) {
-                    log("not finished");
+                if (this.criticalThread != null && this.criticalThread.isAlive())
                     heavyOut.writeChar('N');
-                }
                 
-                else {
-                    log("Finished !");
+                else
                     heavyOut.writeChar('Y');
-                }
                 
                 break;
 
@@ -111,7 +107,6 @@ public class LightWeightProcess {
             default:
                 break;
         }
-        log("Not dying");
         return false;
     }
 

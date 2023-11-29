@@ -209,12 +209,9 @@ public class HeavyProcessA {
                     Thread.sleep(500);
                 } catch (InterruptedException e) {}
 
-                System.out.println("Before : " + answersfromLightweigth);
                 listenLightweight();
-                System.out.println("After : " + answersfromLightweigth);
-                
-                System.out.println("Asking if the subprocesses are done...");
-                System.out.println("Answers : " + answersfromLightweigth);
+
+                System.out.println("Answers to if they're done : " + answersfromLightweigth);
             } while (answersfromLightweigth < NUM_LIGHTWEIGHTS);
 
             System.out.println("They are done");
