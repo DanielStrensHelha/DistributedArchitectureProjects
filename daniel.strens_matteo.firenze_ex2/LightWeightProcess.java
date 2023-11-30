@@ -155,7 +155,7 @@ public class LightWeightProcess {
         if (algorithm.equals('A'))
             comAlgorithm = new Lamport(brothers, this.port, ports, displayOut);
         else if (algorithm.equals('B'))
-            comAlgorithm = new Agrawala(brothers);
+            comAlgorithm = new Agrawala(brothers, this.port, ports, displayOut);
         else log("Don't know the algorithm :(");
     }
 
