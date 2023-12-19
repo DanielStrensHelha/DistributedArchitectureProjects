@@ -191,7 +191,7 @@ public class Lamport implements IClockAlgorithm{
         // Enter the CS and write to display
         for(int i = 0; i<10; i++) {
             writeToDisplay("I'm (Lamport, port : " + this.portNumber + ") writing to the console, messange : " + i);
-            Thread.sleep(1000);
+            Thread.sleep(100);
         }
         this.wantToEnterCS = false;
         sOuts.forEach((s, sOut) -> {
