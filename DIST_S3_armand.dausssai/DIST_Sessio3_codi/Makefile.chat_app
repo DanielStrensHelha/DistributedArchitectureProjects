@@ -19,9 +19,9 @@ TARGETS = chat_app.h   chat_app_clnt.c chat_app_svc.c chat_app_client.c chat_app
 OBJECTS_CLNT = $(SOURCES_CLNT.c:%.c=%.o) $(TARGETS_CLNT.c:%.c=%.o)
 OBJECTS_SVC = $(SOURCES_SVC.c:%.c=%.o) $(TARGETS_SVC.c:%.c=%.o)
 # Compiler flags 
+CFLAGS += -g -I/usr/include/tirpc
+LDLIBS += -lnsl -lpthread -lncurses -ltirpc
 
-CFLAGS += -g 
-LDLIBS += -lnsl -lpthread -lncurses
 RPCGENFLAGS = 
 
 # Targets 
