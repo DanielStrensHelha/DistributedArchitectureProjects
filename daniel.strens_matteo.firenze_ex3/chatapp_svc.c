@@ -22,12 +22,12 @@ chat_history chat_history_instance;
 chat_history * get_chat_history_1_svc(void *argp, struct svc_req *rqstp)
 {
     static chat_history result;
-
     // Just return our chat history
     result = chat_history_instance;
 
     return &result;
 }
+
 
 int * send_message_1_svc(message *argp, struct svc_req *rqstp)
 {
@@ -37,11 +37,19 @@ int * send_message_1_svc(message *argp, struct svc_req *rqstp)
     if (chat_history_instance.count >= 1000) {
         result = 0; // Indicate failure
     } else {
+        // Allocate new memory for the message
+        message *new_message = malloc(sizeof(message));
+        new_message->sender = strdup(argp->sender);
+        new_message->content = strdup(argp->content);
+
         // Add the new message to our chat history
-        chat_history_instance.messages.messages_val[chat_history_instance.count] = *argp;
+        chat_history_instance.messages.messages_val[chat_history_instance.count] = *new_message;
         chat_history_instance.count++;
+        chat_history_instance.messages.messages_len++;
         result = 1; // Indicate success
     }
+    // Display message on the server
+    printf("Received : %s\n", argp->content);
 
     return &result;
 }
@@ -94,9 +102,13 @@ chatapp_1(struct svc_req *rqstp, register SVCXPRT *transp)
     return;
 }
 
-int
-main (int argc, char **argv)
+int main (int argc, char **argv)
 {
+    // Allocate memory for messages_val
+    chat_history_instance.messages.messages_val = malloc(1000 * sizeof(message));
+    chat_history_instance.messages.messages_len = 0;
+    chat_history_instance.count = 0;
+
     register SVCXPRT *transp;
 
     pmap_unset (CHATAPP, VER1);

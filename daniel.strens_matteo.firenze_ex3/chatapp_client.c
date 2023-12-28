@@ -34,7 +34,7 @@ void sigint_rsi() {
     exit(EXIT_SUCCESS);
 }
 
-void initPantalles() {
+void initWindow() {
     mainWin = initscr();
     noecho();
     cbreak();
@@ -66,33 +66,32 @@ void chatapp_1() {
     config.client = clnt;
 }
 
-void sendMsg(char* message) {
+
+void sendMsg(char* message_content) {
     int* result;
     message send_message_1_arg;
 
     send_message_1_arg.sender = config.username;
-    send_message_1_arg.content = message;
+    send_message_1_arg.content = message_content;
 
     result = send_message_1(&send_message_1_arg, config.client);
     if (result == (int*)NULL){
         clnt_perror (config.client, "send_message call failed");
         raise(SIGINT);
     }
-
-    free(message);
 }
+
 
 void receiveChat() {
     chat_history* result;
-
     result = get_chat_history_1(NULL, config.client);
     if (result == (chat_history*)NULL){
         clnt_perror (config.client, "get_chat_history call failed");
         raise(SIGINT);
     }
     wmove(chatWin, 2, 0);
-    for (int i = 0; i < result->count; i++) {
-        wprintw(chatWin, "%s: %s\n", result->messages[i].sender, result->messages[i].content);
+    for (int i = 0; i < result->messages.messages_len; i++) {
+        wprintw(chatWin, "%s: %s\n", result->messages.messages_val[i].sender, result->messages.messages_val[i].content);
     }
     wrefresh(chatWin);
 }
@@ -103,7 +102,7 @@ void* listenChat(void) {
         usleep(100000);
     }
 }
-
+LQzreXLBEc3FxP
 int main (int argc, char *argv[]) {
 
     if (argc != 3) {
@@ -119,7 +118,7 @@ int main (int argc, char *argv[]) {
     // Configure client
     chatapp_1();
 
-    initPantalles();
+    initWindow();
 
     // Thread that updates chat
     pthread_create(&thread, NULL, (void*)listenChat, NULL);

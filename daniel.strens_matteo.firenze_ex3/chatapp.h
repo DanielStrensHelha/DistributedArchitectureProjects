@@ -23,10 +23,11 @@ typedef struct message message;
 struct chat_history {
 	struct {
 		u_int messages_len;
-		message *messages_val;
+		message * messages_val;
 	} messages;
 	int count;
 };
+
 typedef struct chat_history chat_history;
 
 #define CHATAPP 0x3a3afeeb
