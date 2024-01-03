@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class Main {
-    private final static int SIZE = 5_000_000;
+    private final static int SIZE = 500_000;
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {        
         //Shuffling the array

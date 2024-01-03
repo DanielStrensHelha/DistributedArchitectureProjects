@@ -22,8 +22,50 @@ chat_history chat_history_instance;
 chat_history * get_chat_history_1_svc(void *argp, struct svc_req *rqstp)
 {
     static chat_history result;
-    // Just return our chat history
-    result = chat_history_instance;
+
+    // Allocate memory for 10 messages initially
+    result.messages.messages_val = malloc(10 * sizeof(message));
+    int allocated = 10; // Keep track of allocated space
+
+    // Open the chat history file
+    FILE *file = fopen("chat_history.txt", "r");
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        return NULL;
+    }
+
+    // Read the chat history from the file
+    char buffer[255];
+    int count = 0;
+
+    while (fgets(buffer, 255, file) != NULL) {
+        // Parse the sender and content from the line
+        char *sender = strtok(buffer, ":");
+        char *content = strtok(NULL, "\n");
+
+        // Allocate new memory for the message
+        message *new_message = malloc(sizeof(message));
+        new_message->sender = strdup(sender);
+        new_message->content = strdup(content);
+
+        // Add the new message to our chat history
+        result.messages.messages_val[count] = *new_message;
+        count++;
+
+        if (count >= allocated) {
+            allocated += 10; // Double the allocated space
+            result.messages.messages_val = realloc(result.messages.messages_val, allocated * sizeof(message));
+            if (result.messages.messages_val == NULL) {
+                printf("Error reallocating memory!\n");
+                return NULL;
+            }
+        }
+
+    }
+    fclose(file);
+
+    result.count = count;
+    result.messages.messages_len = count;
 
     return &result;
 }
@@ -33,21 +75,17 @@ int * send_message_1_svc(message *argp, struct svc_req *rqstp)
 {
     static int result;
 
-    // Check if we have room for more messages
-    if (chat_history_instance.count >= 1000) {
-        result = 0; // Indicate failure
-    } else {
-        // Allocate new memory for the message
-        message *new_message = malloc(sizeof(message));
-        new_message->sender = strdup(argp->sender);
-        new_message->content = strdup(argp->content);
-
-        // Add the new message to our chat history
-        chat_history_instance.messages.messages_val[chat_history_instance.count] = *new_message;
-        chat_history_instance.count++;
-        chat_history_instance.messages.messages_len++;
-        result = 1; // Indicate success
+    //Open history file
+    FILE *file = fopen("chat_history.txt", "a");
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        return NULL;
     }
+
+    // Write the new message to the file
+    fprintf(file, "%s: %s\n", argp->sender, argp->content);
+    fclose(file);
+
     // Display message on the server
     printf("Received : %s\n", argp->content);
 
