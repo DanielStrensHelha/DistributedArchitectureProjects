@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.glassfish.grizzly:grizzly-http-server:4.0.2'
+    implementation 'org.glassfish.grizzly:grizzly-http:4.0.2'
+
+    implementation 'org.glassfish.grizzly:grizzly-websockets:4.0.2'
+    implementation 'org.glassfish.grizzly:grizzly-framework:4.0.2'
+    implementation 'org.glassfish.grizzly:grizzly-http:4.0.2'
+
+}
+task run(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    main = 'WebappLink'
+}

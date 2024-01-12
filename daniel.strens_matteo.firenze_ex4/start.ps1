@@ -5,5 +5,6 @@ Remove-Item -Path ".\bin" -Recurse -Force
 javac -d bin *.java
 
 cd bin
+Start-Process java -ArgumentList "NodeMonitor"
 Start-Process java -ArgumentList "Main"
 cd ..

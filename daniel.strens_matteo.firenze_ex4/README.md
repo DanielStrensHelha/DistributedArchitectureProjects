@@ -1,10 +1,8 @@
-#TODO complete this file
-Main.java: This is the entry point of your application. It should initialize the nodes and start the server for communication.
+In order to compile everything and start every necessary process,
+    1 : Navigate to the root of the project.
+    2 : Run the script Start.ps1 (windows : .\start.ps1).
 
-Node.java: This class represents a node in the system. It should have methods for handling transactions, maintaining the log of versions, and communicating with other nodes.
-
-Transaction.java: This class represents a transaction. It should have methods for executing the transaction on a node.
-
-Client.java: This class represents a client. It should read transactions from a local file and send them to the appropriate node.
-
-Server.java: This class handles socket communication between nodes. It should have methods for sending and receiving data.
+When you want to stop the different processes:
+    1 : Stop the monitor with <ctrl + C>.
+    2 : Stop the main screen with the node's debugging messages in the same way.
+    Every client should automatically close at this point as well.

@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -23,9 +22,13 @@ import java.util.regex.Pattern;
 
 public class Node {
     private static final int SIZE = 100;
+    private static final int MONITOR_PORT = 6969;
     private int[] data;
     private String logFilePath;
     private int layer;
+    
+    private int clientsConnected;
+    private String lastTransaction;
     
     private int operationsDone;
 
@@ -61,9 +64,11 @@ public class Node {
             while (true) {
                 Socket client = serverForClients.accept();
                 executor.execute(() -> handleClient(client));
+                clientsConnected++;
             }
         } catch (Exception e) {
             System.out.println("Client disconnected");
+            clientsConnected--;
         }
     }
 
@@ -93,6 +98,7 @@ public class Node {
 
         mainOut.writeInt(this.layer);
         mainOut.writeInt(this.localPort);
+
         ArrayList<Integer> brotherPorts = new ArrayList<Integer>();
         int broSmallerPortCount = 0;
         while (true) {
@@ -141,7 +147,34 @@ public class Node {
 
         System.out.println("\nport " + localPort + " Successfully connected");
         mainSocket.close();
+
+
     }
+
+    private void beginMonitoring() throws Exception {
+        // Connect to the monitor
+        Socket s = new Socket("localhost", MONITOR_PORT);
+        executor.execute(()-> {
+            try {
+                PrintWriter out = new PrintWriter(s.getOutputStream(), true);
+                DataInputStream in = new DataInputStream(s.getInputStream());
+
+                out.println(String.valueOf(this.layer));
+                out.println(String.valueOf(this.localPort));
+                
+                while (true) {
+                    in.readChar();
+                    out.println("- Node " + this.localPort + " -");
+                    out.println("Operations done -> " + this.operationsDone);
+                    if (this.layer == 0)
+                        out.println("Last received transaction -> " + this.lastTransaction);
+                    out.println("Clients connected -> " + clientsConnected);
+                    out.println("EOF");
+                }
+            } catch (IOException e) {}
+        });
+    }
+
 
     /**
      * 
@@ -175,7 +208,7 @@ public class Node {
         // Start accepting clients
         node.executor.execute(()-> node.listenForNewClients());
         
-        System.out.println("------------------- TEST ------------------- ");
+        System.out.println("------------------- CONNECTED ------------------- ");
 
         // A thread that iterates over the pendingRequests in this.com
         node.executor.execute(() -> {
@@ -189,10 +222,20 @@ public class Node {
             node.executor.execute(() -> node.layer1TenSecondsUpdate());
         }
 
-        //TODO connect to the webapp
+        //TODO connect to the monitor
+        System.out.println("-----------------------Begin monitoring !-----------------");
+        node.executor.execute(() -> {
+            try {
+                node.beginMonitoring();
+            } catch (Exception e) {}
+        });
 
     }
 
+    /**
+     * Loop that will periodically look into the pending requests and handle any one that it finds
+     * @throws Exception
+     */
     private void handlePendingRequests() throws Exception {
         while (true) {
             Thread.sleep(250);
@@ -267,6 +310,7 @@ public class Node {
             
             while (true) {
                 String transaction = clientIn.readLine();
+                lastTransaction = transaction;
                 System.out.println("port " + this.localPort + "Received from client : " + transaction);
                 String response = new String();
                 
